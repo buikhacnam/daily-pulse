@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8f4">
+  <title>Daily Pulse — Health overview</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <a class="brand" href="/" aria-label="Daily Pulse home"><span class="brand-icon">✳</span><span>daily<span class="brand-accent">pulse</span></span></a>
+      <div class="sidebar-label">WORKSPACE</div>
+      <a class="nav-item active" href="/" aria-current="page"><span class="nav-icon">▦</span> Overview</a>
+      <div class="sidebar-bottom"><span class="avatar">C</span><span><strong>Personal dashboard</strong><small>Demo workspace</small></span></div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar"><span class="breadcrumb">Workspace <span>/</span> Overview</span><span class="topbar-actions"><span class="topbar-right"><span class="status-dot"></span><span id="source-label">Demo data</span></span><a class="connect-button" id="connect-button" href="http://localhost:8765/auth/google/start" hidden>Connect Google Health</a><button class="connect-button secondary" id="disconnect-button" type="button" hidden>Disconnect</button></span></header>
+      <div class="content">
+        <div class="intro-row">
+          <div><div class="eyebrow">YOUR HEALTH AT A GLANCE</div><h1>Your daily pulse <span class="sun">✳</span></h1><p class="subtitle">A clearer picture of how you're doing, one day at a time.</p></div>
+          <div class="date-pill" id="date-label">Loading…</div>
+        </div>
+
+        <div class="demo-banner"><span class="banner-icon">ⓘ</span><span id="status-message">You're viewing sample health data. Connect Google Health to see your data.</span></div>
+
+        <section aria-labelledby="today-heading"><div class="section-heading"><div><span class="section-kicker">TODAY'S SNAPSHOT</span><h2 id="today-heading">The essentials</h2></div><span class="section-note">Based on the latest available data</span></div>
+          <div class="metric-grid">
+            <article class="metric-card mint"><div class="metric-top"><span class="metric-icon">◉</span><span class="metric-trend">Daily total</span></div><div class="metric-label">Steps taken</div><div class="metric-value" id="steps-value">—</div><div class="metric-foot"><div class="progress"><span id="steps-progress"></span></div><span id="steps-goal">of 10,000 step goal</span></div></article>
+            <article class="metric-card peach"><div class="metric-top"><span class="metric-icon">♥</span><span class="metric-trend">Resting</span></div><div class="metric-label">Heart rate</div><div class="metric-value"><span id="heart-value">—</span><small> bpm</small></div><div class="metric-foot" id="heart-note">Google Health daily resting heart rate</div></article>
+            <article class="metric-card lavender"><div class="metric-top"><span class="metric-icon">☾</span><span class="metric-trend">Last night</span></div><div class="metric-label">Sleep duration</div><div class="metric-value" id="sleep-value">—</div><div class="metric-foot" id="sleep-note">Attributed to wake-up day</div></article>
+            <article class="metric-card sand"><div class="metric-top"><span class="metric-icon">✦</span><span class="metric-trend">Daily total</span></div><div class="metric-label">Calories burned</div><div class="metric-value"><span id="calories-value">—</span><small> kcal</small></div><div class="metric-foot">Includes resting + active energy</div></article>
+          </div>
+        </section>
+
+        <section class="trends" aria-labelledby="trends-heading"><div class="section-heading"><div><span class="section-kicker">YOUR TRENDS</span><h2 id="trends-heading">The bigger picture</h2></div><div class="range-control" role="group" aria-label="Chart date range"><button type="button" class="selected" data-days="7" aria-pressed="true">7 days</button><button type="button" data-days="30" aria-pressed="false">30 days</button></div></div>
+          <div class="chart-grid">
+            <article class="chart-card"><div class="chart-header"><div><div class="chart-icon green">↗</div><h3>Daily steps</h3><p>Movement over time</p></div><span class="chart-total" id="steps-average">—<small> avg / day</small></span></div><div class="chart"><img id="steps-chart" alt="Daily steps chart"></div></article>
+            <article class="chart-card"><div class="chart-header"><div><div class="chart-icon purple">☾</div><h3>Sleep</h3><p>Hours each night</p></div></div><div class="chart"><img id="sleep-chart" alt="Sleep duration chart"></div></article>
+            <article class="chart-card"><div class="chart-header"><div><div class="chart-icon orange">✦</div><h3>Calories burned</h3><p>Total energy per day</p></div></div><div class="chart"><img id="calories-chart" alt="Calories burned chart"></div></article>
+            <article class="chart-card"><div class="chart-header"><div><div class="chart-icon red">♥</div><h3>Resting heart rate</h3><p>Daily resting beats per minute</p></div><span class="chart-total" id="heart-average">—<small> bpm avg</small></span></div><div class="chart"><img id="heart-chart" alt="Resting heart rate chart"></div></article>
+          </div>
+        </section>
+        <footer>Daily Pulse <span>·</span> Personal health overview <span>·</span> Sample data for preview</footer>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
