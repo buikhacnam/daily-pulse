@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from urllib.parse import urlencode
 import secrets
@@ -7,6 +7,7 @@ import httpx
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from .data import dashboard_data
 from .charts import CHARTS, chart_svg
@@ -17,11 +18,54 @@ ROOT = Path(__file__).resolve().parent
 CALLBACK_URL = "http://localhost:8765/auth/google/callback"
 app = FastAPI(title="Daily Pulse", version="0.1.0")
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
+templates = Jinja2Templates(directory=ROOT / "templates")
+
+
+def display_number(value: int | None) -> str:
+    return f"{value:,}" if value is not None else "—"
+
+
+def display_sleep(value: int | None) -> str:
+    return f"{value // 60}h {value % 60:02d}m" if value is not None else "—"
+
+
+def average(days: list[dict], key: str) -> str:
+    values = [day[key] for day in days if day[key] is not None]
+    return display_number(round(sum(values) / len(values)) if values else None)
 
 
 @app.get("/", include_in_schema=False)
-async def index() -> HTMLResponse:
-    return HTMLResponse((ROOT / "static" / "index.html").read_text())
+async def index(request: Request, days: int = Query(default=7, ge=1, le=30)) -> HTMLResponse:
+    data = await get_data(days)
+    visible_days = data["days"][-days:]
+    today = visible_days[-1]
+    live = data["source"] == "google_health"
+    has_sleep = any(day["sleep_minutes"] is not None for day in visible_days)
+    if live:
+        synced = datetime.fromisoformat(data["last_synced"].replace("Z", "+00:00"))
+        message = f"Connected to Google Health · Checked {synced:%b %-d, %Y at %-I:%M %p}."
+        if not has_sleep:
+            message += f" No sleep measurements returned for these {days} days."
+    elif connection.configured:
+        message = "You're viewing sample health data. Connect Google Health to see your data."
+    else:
+        message = "Sample data is shown. Add a local .env to enable connection."
+    return templates.TemplateResponse(request, "index.html", {
+        "days": days, "entries": visible_days, "today": today,
+        "date_label": date.fromisoformat(today["date"]).strftime("%A, %B %-d, %Y"),
+        "source_label": "Google Health" if live else "Demo data",
+        "message": message, "configured": connection.configured,
+        "connected": connection.connected, "live": live,
+        "has_sleep": has_sleep,
+        "heart_note": (f"Google Health daily resting estimate for {date.fromisoformat(today['date']):%b %-d}"
+                       if live else "Daily resting heart rate"),
+        "sleep_note": ("No sleep measurement for this wake-up day" if today["sleep_minutes"] is None
+                       else "Attributed to wake-up day") if has_sleep else f"No sleep measurements in these {days} days",
+        "steps_average": average(visible_days, "steps"),
+        "heart_average": average(visible_days, "resting_heart_rate"),
+        "steps_progress": min(100, (today["steps"] or 0) / 10000 * 100),
+        "display_number": display_number, "display_sleep": display_sleep,
+    })
 
 
 @app.get("/api/summary")
@@ -104,12 +148,12 @@ async def auth_callback(request: Request, code: str | None = None, state: str | 
 
 
 @app.post("/auth/disconnect")
-async def disconnect(request: Request) -> dict:
+async def disconnect(request: Request) -> RedirectResponse:
     origin = request.headers.get("origin")
-    if origin and origin != "http://localhost:8765":
+    if origin and origin not in {"http://localhost:8765", "http://127.0.0.1:8765"}:
         raise HTTPException(status_code=403, detail="Invalid origin")
     connection.disconnect()
-    return {"connected": False}
+    return RedirectResponse("/", status_code=303)
 
 
 @app.get("/healthz")

@@ -4,6 +4,7 @@ from io import StringIO
 
 from matplotlib.backends.backend_svg import FigureCanvasSVG
 from matplotlib.figure import Figure
+from matplotlib.ticker import FuncFormatter, MaxNLocator
 
 
 CHARTS = {
@@ -18,7 +19,7 @@ def chart_svg(metric: str, days: list[dict]) -> str:
     field, color, kind = CHARTS[metric]
     figure = Figure(figsize=(7, 1.75), dpi=100, facecolor="none")
     FigureCanvasSVG(figure)
-    ax = figure.add_axes((0.055, 0.16, 0.93, 0.78), facecolor="none")
+    ax = figure.add_axes((0.12, 0.16, 0.865, 0.78), facecolor="none")
     values = [day.get(field) for day in days]
     if metric == "sleep":
         values = [value / 60 if value is not None else None for value in values]
@@ -44,6 +45,13 @@ def chart_svg(metric: str, days: list[dict]) -> str:
         ax.set_xlim(-0.5, len(days) - 0.5)
         ticks = positions if len(days) <= 7 else sorted(set([0, 7, 14, 21, len(days) - 1]))
         ax.set_xticks(ticks, [f"{int(days[i]['date'][5:7])}/{int(days[i]['date'][8:10])}" for i in ticks])
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=4, integer=metric != "sleep"))
+        if metric == "sleep":
+            ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}h"))
+        elif metric == "steps":
+            ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value / 1000:g}k" if value else "0"))
+        else:
+            ax.yaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:,.0f}"))
         ax.grid(axis="y", color="#eef1eb", linewidth=0.8)
         ax.set_axisbelow(True)
     else:
@@ -55,7 +63,7 @@ def chart_svg(metric: str, days: list[dict]) -> str:
     for spine in ax.spines.values():
         spine.set_visible(False)
     ax.tick_params(axis="x", length=0, labelsize=8, colors="#aab4aa", pad=8)
-    ax.tick_params(axis="y", length=0, labelleft=False)
+    ax.tick_params(axis="y", length=0, labelsize=8, colors="#aab4aa", pad=4)
     output = StringIO()
     figure.savefig(output, format="svg", transparent=True)
     return output.getvalue()

@@ -45,9 +45,35 @@ def test_api_rejects_unsupported_ranges_and_dates():
 
 
 def test_page_and_health_endpoint():
-    assert get("/").status_code == 200
+    page = get("/")
+    assert page.status_code == 200
+    assert "/api/charts/steps.svg?days=7" in page.text
+    assert "<script" not in page.text
+    assert "Loading…" not in page.text
     assert get("/healthz").json() == {"status": "ok"}
     assert get("/api/status").json()["connected"] is False
+
+
+def test_server_rendered_range_has_values_and_daily_details():
+    page = get("/?days=30")
+    data = get("/api/trends?days=30").json()
+    assert page.status_code == 200
+    assert f"{data['days'][-1]['steps']:,}" in page.text
+    assert "/api/charts/heart.svg?days=30" in page.text
+    assert page.text.count("<time>") == 120
+    assert 'href="/?days=30" class="selected"' in page.text
+    assert get("/?days=31").status_code == 422
+
+
+def test_disconnect_form_redirects_on_local_post():
+    async def run() -> httpx.Response:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1:8765") as client:
+            return await client.post("/auth/disconnect", headers={"Origin": "http://127.0.0.1:8765"})
+
+    response = asyncio.run(run())
+    assert response.status_code == 303
+    assert response.headers["location"] == "/"
 
 
 def test_google_health_normalization_preserves_missing_data_and_sleep_wake_date():
@@ -97,6 +123,13 @@ def test_python_chart_endpoint_returns_svg_for_requested_range():
     assert response.headers["cache-control"] == "no-store"
     assert "<svg" in response.text
     assert get("/api/charts/unknown.svg").status_code == 404
+
+
+def test_chart_y_axes_show_readable_values():
+    assert "<!-- 8k -->" in get("/api/charts/steps.svg?days=7").text
+    assert "<!-- 7.5h -->" in get("/api/charts/sleep.svg?days=7").text
+    assert "<!-- 2,400 -->" in get("/api/charts/calories.svg?days=7").text
+    assert "<!-- 64 -->" in get("/api/charts/heart.svg?days=7").text
 
 
 def test_python_chart_handles_missing_measurements():
